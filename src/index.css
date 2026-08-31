@@ -1,0 +1,150 @@
+@import "tailwindcss";
+
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #312e2b;
+  background: #fdfcfa;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+
+body {
+  min-height: 100vh;
+}
+
+button,
+kbd {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+kbd {
+  border: 1px solid #ded8d0;
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: #fff;
+  color: #837a71;
+  padding: 0 4px;
+  font-size: 9px;
+  line-height: 16px;
+}
+
+.eyebrow {
+  color: #aaa098;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.canvas-shell {
+  min-height: 300px;
+}
+
+.room-canvas {
+  display: block;
+  outline: none;
+  overflow: visible;
+  touch-action: none;
+  user-select: none;
+}
+
+.room-canvas:focus-visible {
+  box-shadow: inset 0 0 0 2px rgba(54, 120, 212, 0.35);
+}
+
+.room-item {
+  transform-box: fill-box;
+  transform-origin: 0 0;
+}
+
+.room-item:focus-visible rect {
+  stroke: #3678d4;
+  stroke-width: 2.5;
+}
+
+.room-dimensions text {
+  fill: #aaa098;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.control-button {
+  border: 1px solid #e5ded6;
+  border-radius: 8px;
+  background: #fff;
+  color: #6f675f;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 7px 9px;
+  transition: border-color 150ms ease, background 150ms ease, color 150ms ease;
+}
+
+.control-button:hover {
+  border-color: #cdbfb1;
+  background: #faf8f5;
+  color: #413c37;
+}
+
+.control-button:focus-visible {
+  outline: 2px solid rgba(54, 120, 212, 0.35);
+  outline-offset: 1px;
+}
+
+.control-button-danger:hover {
+  border-color: #efc5be;
+  background: #fff8f6;
+  color: #c45147;
+}
+
+.tool-log {
+  scrollbar-color: #d9d1c8 transparent;
+  scrollbar-width: thin;
+}
+
+.tool-log::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tool-log::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #d9d1c8;
+}
+
+@keyframes pulse-outline {
+  0%, 100% {
+    stroke: #f0a529;
+    stroke-width: 3;
+  }
+  50% {
+    stroke: #f0a529;
+    stroke-width: 5;
+  }
+}
+
+.animate-pulse-outline {
+  animation: pulse-outline 0.5s ease-in-out 4;
+}
+
+@media (max-width: 767px) {
+  .canvas-shell {
+    min-height: 390px;
+  }
+}

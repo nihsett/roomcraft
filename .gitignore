@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.npm/
+
+# Production and development build output
+dist/
+dist-ssr/
+.vite/
+*.tsbuildinfo
+
+# Test and coverage output
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+blob-report/
+
+# Logs and runtime output
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Local environment files
+.env
+.env.*
+!.env.example
+*.local
+
+# Editor and IDE files
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.iml
+*.suo
+*.user
+*.userossc
+*.swp
+*.swo
+*~
+
+# OS-generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+
+# Temporary files
+.tmp/
+tmp/
+.cache/
+*.tmp
+*.temp
