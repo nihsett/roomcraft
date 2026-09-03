@@ -12,7 +12,6 @@ import { effectiveSize } from './types';
 import { DEFAULT_ITEMS, DEFAULT_ROOM } from './defaults';
 import { CATALOG } from './catalog';
 import { enrichItem } from './engine/semantics';
-import { planDiningLayout } from './engine/dining';
 
 let nextId = 100;
 
@@ -26,13 +25,6 @@ function isRotation(value: unknown): value is Rotation {
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
-}
-
-export interface DiningArrangementSummary {
-  tableId: string;
-  guestCount: number;
-  createdChairIds: string[];
-  removedItemIds: string[];
 }
 
 interface RoomCraftState {
@@ -50,11 +42,6 @@ interface RoomCraftState {
   addItem: (type: string, x: number, y: number, rotation?: Rotation) => Item | string;
   moveItem: (id: string, x: number, y: number) => true | string;
   moveItems: (moves: { id: string; x: number; y: number; rotation?: Rotation }[]) => true | string;
-  prepareDining: (
-    guestCount: number,
-    clearLoungeFurniture: boolean,
-    tableId?: string,
-  ) => DiningArrangementSummary | string;
   rotateItem: (id: string, rotation: Rotation) => true | string;
   removeItem: (id: string) => true | string;
   selectItem: (id: string | null) => void;
@@ -189,110 +176,6 @@ export const useStore = create<RoomCraftState>()(
 
       set({ items: allItems, clearanceOverlay: null });
       return true;
-    },
-
-    prepareDining: (guestCount, clearLoungeFurniture, tableId) => {
-      const state = get();
-      const tables = state.items.filter((item) => item.type === 'dining-table');
-      const table = tableId
-        ? tables.find((candidate) => candidate.id === tableId)
-        : tables.length === 1
-          ? tables[0]
-          : undefined;
-
-      if (!table) {
-        if (tableId) return `Dining table not found: ${tableId}`;
-        if (tables.length === 0) return 'No dining table found in the room.';
-        return 'More than one dining table exists. Pass table_id to choose one.';
-      }
-
-      const result = planDiningLayout(
-        state.room,
-        state.items,
-        table,
-        guestCount,
-        clearLoungeFurniture,
-      );
-      if (!result.ok) return result.error;
-
-      const chairCatalog = CATALOG['dining-chair'];
-      if (!chairCatalog) return 'Dining chair catalog entry is missing.';
-
-      const existingChairs = state.items.filter((item) => item.type === 'dining-chair');
-      const reusedChairs = existingChairs.slice(0, guestCount);
-      const extraChairs = existingChairs.slice(guestCount);
-      const createdChairIds: string[] = [];
-      const arrangedChairs = result.plan.seats.map((seat, index): Item => {
-        const existing = reusedChairs[index];
-        if (existing) {
-          return {
-            ...existing,
-            x: seat.x,
-            y: seat.y,
-            rotation: seat.rotation,
-          };
-        }
-
-        const id = genId('dining-chair');
-        createdChairIds.push(id);
-        return {
-          id,
-          type: 'dining-chair',
-          label: `Chair ${index + 1}`,
-          x: seat.x,
-          y: seat.y,
-          w: chairCatalog.w,
-          d: chairCatalog.d,
-          rotation: seat.rotation,
-        };
-      });
-
-      const updatedTable: Item = {
-        ...table,
-        x: result.plan.table.x,
-        y: result.plan.table.y,
-        rotation: result.plan.table.rotation,
-      };
-      const removedItemIds = [
-        ...result.plan.removeItemIds,
-        ...extraChairs.map((chair) => chair.id),
-      ];
-      const removed = new Set(removedItemIds);
-      const arrangedById = new Map(arrangedChairs.map((chair) => [chair.id, chair]));
-      const nextItems: Item[] = [];
-
-      for (const item of state.items) {
-        if (removed.has(item.id)) continue;
-        if (item.id === table.id) {
-          nextItems.push(updatedTable);
-          continue;
-        }
-        const arranged = arrangedById.get(item.id);
-        if (arranged) {
-          nextItems.push(arranged);
-          arrangedById.delete(item.id);
-          continue;
-        }
-        nextItems.push(item);
-      }
-      nextItems.push(...arrangedById.values());
-
-      const validationError = validateLayout(state.room, nextItems);
-      if (validationError) return `Dining arrangement failed validation: ${validationError}`;
-
-      set({
-        items: nextItems,
-        selectedId: state.selectedId && removed.has(state.selectedId) ? null : state.selectedId,
-        highlightId: state.highlightId && removed.has(state.highlightId) ? null : state.highlightId,
-        clearanceOverlay: null,
-      });
-
-      return {
-        tableId: table.id,
-        guestCount,
-        createdChairIds,
-        removedItemIds,
-      };
     },
 
     rotateItem: (id, rotation) => {
@@ -471,4 +354,10 @@ function validateLayout(room: Room, items: Item[]): string | null {
     }
   }
   return null;
+}
+
+// Dev-only handle so capture tooling can simulate a human drag (move + journal)
+// without routing through a WebMCP tool, mirroring what a real pointer drag does.
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  (window as unknown as { __rcStore?: typeof useStore }).__rcStore = useStore;
 }

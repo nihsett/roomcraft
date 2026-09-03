@@ -46,8 +46,7 @@ export async function registerAllStaticTools(): Promise<void> {
       'UNROTATED dimensions, so rotation 90/270 swaps the visual footprint. Also returns ' +
       'human_actions_since_last_call: every drag, rotate, add, or delete the human performed ' +
       'since your last tool call. Use it to understand what changed. For dinner guests, hosting, ' +
-      'or arranging chairs around a dining table, always call prepare_for_dinner instead of ' +
-      'calculating chair positions yourself.',
+      'When seating a dining group, place each chair facing its table.',
     inputSchema: { type: 'object', properties: {}, required: [] },
     execute: async () => makeResponse(),
   });
@@ -58,7 +57,7 @@ export async function registerAllStaticTools(): Promise<void> {
       'Move one furniture item to a new position. x and y are centimeters measured from the ' +
       'top-left corner of the room and identify the top-left corner of the item footprint. ' +
       'Fails if the item is out of bounds or overlaps another blocking item; rugs do not collide. ' +
-      'Do not use this to seat a dining chair; prepare_for_dinner handles chair position and orientation.',
+      'Do not hand-place dining chairs blindly; seat them facing the table.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -81,7 +80,7 @@ export async function registerAllStaticTools(): Promise<void> {
       'are applied. If one move is out of bounds or overlaps another blocking item, the entire batch ' +
       'is rejected and nothing moves. Use this for a coordinated room rearrangement; all accepted ' +
       'items animate together. Each move may optionally include rotation 0, 90, 180, or 270. ' +
-      'Never use this to arrange dining chairs around a table; call prepare_for_dinner instead.',
+      'When arranging dining chairs around a table, make every chair face the table.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -145,8 +144,7 @@ export async function registerAllStaticTools(): Promise<void> {
       }).join(', ')}. ` +
       'Dimensions are unrotated width x depth in centimeters. x,y is the top-left of the placed ' +
       'footprint. Fails if the item is out of bounds or overlaps blocking furniture; rugs are non-blocking. ' +
-      'Never use add_item for dining-chair. Use prepare_for_dinner, which creates the exact chair count ' +
-      'and guarantees every chair faces the table.',
+      'Dining chairs can be placed with add_item — aim each chair at the table it faces.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -162,9 +160,6 @@ export async function registerAllStaticTools(): Promise<void> {
       required: ['type', 'x', 'y'],
     },
     execute: async ({ type, x, y, rotation }) => {
-      if (type === 'dining-chair') {
-        return errResponse('Use prepare_for_dinner to create and arrange dining chairs.');
-      }
       const result = useStore.getState().addItem(type, x, y, rotation);
       return typeof result === 'string'
         ? errResponse(result)
@@ -424,58 +419,7 @@ export async function registerAllStaticTools(): Promise<void> {
     },
   });
 
-  await registerTool({
-    name: 'prepare_for_dinner',
-    description:
-      'Always use this tool when the user mentions dinner guests, hosting a meal, seating a number ' +
-      'of people, or making a dining area social. This is the only tool that should create or arrange ' +
-      'dining chairs. It moves the dining table toward the nearest open central position, reuses existing ' +
-      'chairs, creates or removes chairs until there are exactly guest_count seats, and deterministically ' +
-      'faces every chair toward the table. The complete conversion is validated and applied atomically. ' +
-      'Set clear_lounge_furniture=true when the user asks to remove sofas, clear the living area, convert ' +
-      'the room for dining, or make it a social dining room; this removes sofas, loveseats, armchairs, and ' +
-      'the coffee table while preserving the rug, TV, bookshelf, and plants.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        guest_count: {
-          type: 'integer',
-          minimum: 1,
-          maximum: 8,
-          description: 'Exact number of people who need dining chairs, from 1 to 8',
-        },
-        clear_lounge_furniture: {
-          type: 'boolean',
-          description: 'True when the user wants sofas or other lounge furniture cleared for dining',
-        },
-        table_id: {
-          type: 'string',
-          description: 'Optional dining table ID; omit when the room has one dining table',
-        },
-      },
-      required: ['guest_count', 'clear_lounge_furniture'],
-    },
-    execute: async ({ guest_count, clear_lounge_furniture, table_id }) => {
-      if (!Number.isInteger(guest_count) || guest_count < 1 || guest_count > 8) {
-        return errResponse('guest_count must be a whole number from 1 to 8.');
-      }
-      if (typeof clear_lounge_furniture !== 'boolean') {
-        return errResponse('clear_lounge_furniture must be true or false.');
-      }
-      if (table_id !== undefined && typeof table_id !== 'string') {
-        return errResponse('table_id must be a string when provided.');
-      }
 
-      const result = useStore.getState().prepareDining(
-        guest_count,
-        clear_lounge_furniture,
-        table_id,
-      );
-      return typeof result === 'string'
-        ? errResponse(result)
-        : makeResponse({ dining_arrangement: result });
-    },
-  });
 
   await registerTool({
     name: 'critique_layout',

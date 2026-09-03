@@ -181,7 +181,7 @@ export function critiqueLayout(items: Item[], room: Room): string[] {
     const expected = directionFrom(chair, nearestTable);
     if (facing !== expected) {
       warnings.push(
-        `${chair.label} (${chair.id}) faces ${facing ? wallName(facing) : 'nowhere'} instead of toward ${nearestTable.label} (${nearestTable.id}). Use prepare_for_dinner to fix the dining arrangement.`,
+        `${chair.label} (${chair.id}) faces ${facing ? wallName(facing) : 'nowhere'} instead of toward ${nearestTable.label} (${nearestTable.id}). Rotate it to face the table.`,
       );
     }
   }

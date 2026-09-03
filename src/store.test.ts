@@ -1,17 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { DEFAULT_ITEMS, DEFAULT_ROOM } from './defaults';
-import { critiqueLayout, getFacingDirection, getFacingTarget, itemCenter } from './engine/semantics';
 import { useStore } from './store';
-import type { Direction, Item } from './types';
 
-const DIRECTION_TO_TABLE: Record<Direction, [number, number]> = {
-  N: [0, -1],
-  S: [0, 1],
-  E: [1, 0],
-  W: [-1, 0],
-};
-
-describe('prepareDining', () => {
+describe('room editing behavior', () => {
   beforeEach(() => {
     useStore.setState({
       room: structuredClone(DEFAULT_ROOM),
@@ -26,63 +17,35 @@ describe('prepareDining', () => {
     });
   });
 
-  it('converts the default room into one clean eight-person dining layout atomically', () => {
-    let updates = 0;
-    const unsubscribe = useStore.subscribe(() => { updates += 1; });
-    const result = useStore.getState().prepareDining(8, true);
-    unsubscribe();
+  it('places an individual dining chair next to a table', () => {
+    const result = useStore.getState().addItem('dining-chair', 300, 100, 90);
+    expect(result).not.toBe('string');
+    expect(result).toMatchObject({ type: 'dining-chair', x: 300, y: 100, rotation: 90 });
+  });
 
-    expect(typeof result).not.toBe('string');
-    expect(updates).toBe(1);
-
+  it('rejects a batch where one move overlaps, leaving everything untouched', () => {
     const state = useStore.getState();
-    const chairs = state.items.filter((item) => item.type === 'dining-chair');
-    const table = state.items.find((item) => item.type === 'dining-table');
-    expect(chairs).toHaveLength(8);
-    expect(table).toMatchObject({ x: 170, y: 155, rotation: 0 });
-    expect(state.items.some((item) => item.type === 'sofa')).toBe(false);
-    expect(state.items.some((item) => item.type === 'armchair')).toBe(false);
-    expect(state.items.some((item) => item.type === 'coffee-table')).toBe(false);
-    expect(state.items.some((item) => item.type === 'rug')).toBe(true);
+    const before = state.items.map((item) => ({ id: item.id, x: item.x, y: item.y }));
 
-    expect(table).toBeDefined();
-    if (!table) return;
-    for (const chair of chairs) {
-      expectChairFacesTable(chair, table);
-      expect(getFacingTarget(chair, state.items)?.id).toBe(table.id);
-    }
-    expect(critiqueLayout(state.items, state.room)).toEqual([]);
+    const result = state.moveItems([
+      { id: 'dchair-1', x: 30, y: 30 }, // valid
+      { id: 'sofa-1', x: 140, y: 250 }, // unchanged, still fine
+      { id: 'coffee-1', x: 30, y: 30 }, // overlaps the chair target above
+    ]);
+    expect(result).not.toBe(true);
+
+    const after = useStore.getState().items.map((item) => ({ id: item.id, x: item.x, y: item.y }));
+    expect(after).toEqual(before);
   });
 
-  it('reuses existing chairs and reports newly created chairs', () => {
-    const result = useStore.getState().prepareDining(8, true);
-    expect(typeof result).not.toBe('string');
-    if (typeof result === 'string') return;
-
-    expect(result.guestCount).toBe(8);
-    expect(result.createdChairIds).toHaveLength(4);
-    expect(new Set(result.removedItemIds)).toEqual(new Set(['sofa-1', 'arm-1', 'coffee-1']));
-  });
-
-  it('removes extra chairs when the requested guest count is smaller', () => {
-    const result = useStore.getState().prepareDining(2, true);
-    expect(typeof result).not.toBe('string');
-    if (typeof result === 'string') return;
-
-    expect(useStore.getState().items.filter((item) => item.type === 'dining-chair')).toHaveLength(2);
-    expect(result.removedItemIds).toEqual(expect.arrayContaining(['dchair-3', 'dchair-4']));
+  it('applies a fully valid batch', () => {
+    const result = useStore.getState().moveItems([
+      { id: 'dchair-1', x: 60, y: 350 },
+      { id: 'dchair-2', x: 110, y: 350 },
+    ]);
+    expect(result).toBe(true);
+    const items = useStore.getState().items;
+    expect(items.find((i) => i.id === 'dchair-1')).toMatchObject({ x: 60, y: 350 });
+    expect(items.find((i) => i.id === 'dchair-2')).toMatchObject({ x: 110, y: 350 });
   });
 });
-
-function expectChairFacesTable(chair: Item, table: Item) {
-  const direction = getFacingDirection(chair);
-  expect(direction).not.toBeNull();
-  if (!direction) return;
-
-  const chairCenter = itemCenter(chair);
-  const tableCenter = itemCenter(table);
-  const vector = DIRECTION_TO_TABLE[direction];
-  const dot = (tableCenter[0] - chairCenter[0]) * vector[0]
-    + (tableCenter[1] - chairCenter[1]) * vector[1];
-  expect(dot).toBeGreaterThan(0);
-}
