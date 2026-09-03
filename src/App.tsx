@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { RoomCanvas } from './canvas/RoomCanvas';
 import { useStore } from './store';
+import type { Rotation } from './types';
 import { Header } from './ui/Header';
 import { Sidebar } from './ui/Sidebar';
 import { isWebMCPAvailable } from './webmcp/register';
@@ -26,6 +27,47 @@ export default function App() {
     return unsubscribe;
   }, []);
 
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable)
+      ) {
+        return;
+      }
+
+      const state = useStore.getState();
+      const { selectedId } = state;
+      if (!selectedId) return;
+      const item = state.items.find((candidate) => candidate.id === selectedId);
+      if (!item) return;
+
+      if (event.key === 'r' || event.key === 'R') {
+        event.preventDefault();
+        const nextRotation = ((item.rotation + 90) % 360) as Rotation;
+        const result = state.rotateItem(selectedId, nextRotation);
+        if (result === true) {
+          state.appendJournal({
+            action: 'rotate',
+            itemId: selectedId,
+            from: { rotation: item.rotation },
+            to: { rotation: nextRotation },
+          });
+        }
+      }
+
+      if (event.key === 'Delete' || event.key === 'Backspace') {
+        event.preventDefault();
+        const result = state.removeItem(selectedId);
+        if (result === true) state.appendJournal({ action: 'remove', itemId: selectedId });
+      }
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   return (
     <div className="flex h-screen min-h-[560px] flex-col overflow-hidden bg-[#fdfcfa] text-[#312e2b]">
       <Header connected={connected} />
@@ -37,9 +79,6 @@ export default function App() {
               Drag pieces to design your room
             </div>
             <RoomCanvas />
-            <div className="pointer-events-none absolute bottom-4 left-4 rounded-lg border border-[#e8e1d9] bg-white/75 px-2.5 py-1.5 text-[10px] text-[#9b9289] shadow-sm backdrop-blur-sm">
-              <kbd>R</kbd> rotate <span className="mx-1 text-[#d2cbc3]">·</span> <kbd>Delete</kbd> remove
-            </div>
           </div>
         </section>
         <Sidebar />

@@ -14,8 +14,8 @@ export function ToolLog() {
       {toolLog.length === 0 && (
         <div className="rounded-xl border border-dashed border-[#e7e0d8] bg-[#fcfbf9] px-3 py-4 text-center">
           <div className="mb-1 text-base text-[#c0b8ae]" aria-hidden="true">◌</div>
-          <p className="text-[11px] leading-4 text-[#aaa29a]">Waiting for agent tool calls</p>
-          <p className="mt-1 text-[10px] leading-4 text-[#c6bfb7]">Ask an AI agent to rearrange the room.</p>
+          <p className="text-[11px] leading-4 text-[#aaa29a]">Ask your agent to change the room</p>
+          <p className="mx-auto mt-2 max-w-[230px] text-[10px] italic leading-4 text-[#9e958c]">“Set this room up for 8 dinner guests and make it social.”</p>
         </div>
       )}
       <div className="space-y-2">

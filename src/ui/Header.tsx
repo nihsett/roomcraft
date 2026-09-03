@@ -7,7 +7,7 @@ export function Header({ connected }: { connected: boolean }) {
         </div>
         <div>
           <h1 className="text-[17px] font-semibold tracking-[-0.02em] text-[#292724]">RoomCraft</h1>
-          <p className="text-[11px] font-medium tracking-[0.02em] text-[#9b938a]">Design together, in real time</p>
+          <p className="text-[11px] font-medium tracking-[0.02em] text-[#9b938a]">Rearrange with an agent via WebMCP</p>
         </div>
       </div>
       <div className="flex items-center gap-2 rounded-full border border-[#e8e3dd] bg-white px-3 py-1.5 text-[11px] font-medium text-[#777069] shadow-sm" title={connected ? 'WebMCP tools are available to an AI agent' : 'Enable WebMCP in a supported browser to connect an AI agent'}>
